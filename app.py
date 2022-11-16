@@ -4,6 +4,7 @@ import platform
 from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 app.config['SECRET_KEY'] = "test key"
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -15,31 +16,21 @@ names_sid = {}
 def hello():
     return 'hello'
 
-def messageReceived():
-    print('message was received!!!')
-
-# @socketio.on('connect') ################### test
-# def test_connect():
-#     print("goooooooooooooooooooooooooooooooood")
-#     emit('pong')
-    
-@socketio.on('ping')
-def test_ping():
-    print('ponggggggggg')
-
-
-@app.route("/join", methods=["GET"])
+@app.route("/join", methods=["POST"]) # 방접속   
 def join():
+    print(request.get_json())
     display_name = request.args.get('display_name')
     mute_audio = request.args.get('mute_audio') # 1 or 0
     mute_video = request.args.get('mute_video') # 1 or 0
     room_id = request.args.get('room_id')
-    session[room_id] = {"name": display_name,
-                        "mute_audio": mute_audio, "mute_video": mute_video}
-    return render_template("join.html", room_id=room_id, display_name=session[room_id]["name"], mute_audio=session[room_id]["mute_audio"], mute_video=session[room_id]["mute_video"])
+    room_allowed = request.args.get('room_allowed')
+    # 에러 처리 로직 추가 
+    session[room_id] = {"name": display_name, "mute_audio": mute_audio, "mute_video": mute_video}
+    print(display_name ,", ",mute_audio ,", ", mute_video ,", ", room_id ,", " )
+    return "Hello"
 
 
-@socketio.on("connect")
+@socketio.on("connect") 
 def on_connect():
     sid = request.sid
     print("New socket connected ", sid)
@@ -110,17 +101,19 @@ def on_data(data):
 
 @socketio.on("chatting")
 def message(message):
-    #sid = request.sid
-    #room_id = message["room_id"]
-    #display_name = session[room_id]["name"]
-
-    # register sid to the room
-    #rooms_sid[sid] = room_id
-    #names_sid[sid] = display_name
-    print(message)
+    print("Hello I'm Received")
+    sender = message["sender"]
+    text = message["text"]
+    room_id = message["room_id"]
+    print(room_id ," : ",sender ,":",text)
     
     # broadcast to others in the room
-    emit("chatting", message , broadcast=True, include_self=False)
+    emit("chatting", message , broadcast=True, include_self=True)
 
-if any(platform.win32_ver()):
-    socketio.run(app, debug=True)
+if __name__ == '__main__':
+    socketio.run(app,
+        host="0.0.0.0",
+        port=5000,
+        debug=True 
+        #ssl_context=("cert.pem", "key.pem")
+        )
