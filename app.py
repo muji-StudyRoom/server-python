@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, session
-from flask_socketio import SocketIO, emit, join_room
-import platform
+from flask_socketio import SocketIO, emit, join_room, send
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -16,21 +15,40 @@ names_sid = {}
 def hello():
     return 'hello'
 
-@app.route("/join", methods=["POST"]) # 방접속   
+def messageReceived():
+    print('message was received!!!')
+
+# @socketio.on('connect') ################### test
+# def test_connect():
+#     print("goooooooooooooooooooooooooooooooood")
+#     emit('pong')
+    
+@socketio.on('ping')
+def test_ping():
+    print('ponggggggggg')
+
+
+@app.route("/join", methods=["GET"])
 def join():
-    print(request.get_json())
     display_name = request.args.get('display_name')
     mute_audio = request.args.get('mute_audio') # 1 or 0
     mute_video = request.args.get('mute_video') # 1 or 0
     room_id = request.args.get('room_id')
-    room_allowed = request.args.get('room_allowed')
-    # 에러 처리 로직 추가 
-    session[room_id] = {"name": display_name, "mute_audio": mute_audio, "mute_video": mute_video}
-    print(display_name ,", ",mute_audio ,", ", mute_video ,", ", room_id ,", " )
-    return "Hello"
+    session[room_id] = {"name": display_name,
+                        "mute_audio": mute_audio, "mute_video": mute_video}
+    return render_template("join.html", room_id=room_id, display_name=session[room_id]["name"], mute_audio=session[room_id]["mute_audio"], mute_video=session[room_id]["mute_video"])
 
+@socketio.on("create-room")
+def on_create_room(data):
+    session[data["room_id"]] = {
+        "name": data["display_name"],
+        "mute_audio": data["mute_audio"],
+        "mute_video": data["mute_video"]
+    }
+    print(session)
+    emit("join-request")
 
-@socketio.on("connect") 
+@socketio.on("connect")
 def on_connect():
     sid = request.sid
     print("New socket connected ", sid)
@@ -41,17 +59,21 @@ def on_join_room(data):
     sid = request.sid
     room_id = data["room_id"]
     display_name = session[room_id]["name"]
-
+    print(sid)
+    
     # register sid to the room
     join_room(room_id)
     rooms_sid[sid] = room_id
     names_sid[sid] = display_name
-
+    
     # broadcast to others in the room
     print("[{}] New member joined: {}<{}>".format(room_id, display_name, sid))
     emit("user-connect", {"sid": sid, "name": display_name},
-         broadcast=True, include_self=False, room=room_id)
-
+        broadcast=True, include_self=False, room=room_id)
+    # broadcasting시 동일한 네임스페이스에 연결된 모든 클라이언트에게 메시지를 송신함
+    # include_self=False 이므로 본인을 제외하고 broadcasting
+    # room=room_id인 room에 메시지를 송신합니다. broadcast의 값이 True이어야 합니다.
+    print("user-connect active")
     # add to user list maintained on server
     if room_id not in users_in_room:
         users_in_room[room_id] = [sid]
@@ -60,6 +82,7 @@ def on_join_room(data):
         usrlist = {u_id: names_sid[u_id]
                    for u_id in users_in_room[room_id]}
         # send list of existing users to the new member
+        print(usrlist)
         emit("user-list", {"list": usrlist, "my_id": sid})
         # add new member to user list maintained on server
         users_in_room[room_id].append(sid)
@@ -101,19 +124,17 @@ def on_data(data):
 
 @socketio.on("chatting")
 def message(message):
-    print("Hello I'm Received")
-    sender = message["sender"]
-    text = message["text"]
-    room_id = message["room_id"]
-    print(room_id ," : ",sender ,":",text)
+    #sid = request.sid
+    #room_id = message["room_id"]
+    #display_name = session[room_id]["name"]
+
+    # register sid to the room
+    #rooms_sid[sid] = room_id
+    #names_sid[sid] = display_name
+    print(message)
     
     # broadcast to others in the room
-    emit("chatting", message , broadcast=True, include_self=True)
+    emit("chatting", message , broadcast=True, include_self=False)
 
-if __name__ == '__main__':
-    socketio.run(app,
-        host="0.0.0.0",
-        port=5000,
-        debug=True 
-        #ssl_context=("cert.pem", "key.pem")
-        )
+if any(platform.win32_ver()):
+    socketio.run(app, debug=True)
