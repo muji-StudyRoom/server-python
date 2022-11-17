@@ -15,7 +15,6 @@ def hello():
 
 @socketio.on('connect') ################### test
 def test_connect():
-    # emit('send-room-data')
     print("connection is successs")
 
 
@@ -34,7 +33,6 @@ def on_create_room(data):
     emit("join-request")
 
 
-
 @socketio.on("join-room")
 def on_join_room(data):
     sid = request.sid
@@ -45,7 +43,6 @@ def on_join_room(data):
     join_room(room_id)
     rooms_sid[sid] = room_id
     names_sid[sid] = display_name
-    
     # broadcast to others in the room
     print("[{}] New member joined: {}<{}>".format(room_id, display_name, sid))
     emit("user-connect", {"sid": sid, "name": display_name},
@@ -68,6 +65,7 @@ def on_join_room(data):
 
     print("\n users: ", users_in_room, "\n")
 
+# leave_room은 사용하지 않아도 되는지?
 
 @socketio.on("disconnect")
 def on_disconnect():
