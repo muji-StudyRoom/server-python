@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, session
 from flask_socketio import SocketIO, emit, join_room, send
-from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "test key"
@@ -41,7 +40,6 @@ def on_join_room(data):
     sid = request.sid
     room_id = data["room_id"]
     display_name = session[room_id]["name"]
-    print(sid)
     
     # register sid to the room
     join_room(room_id)
@@ -55,7 +53,6 @@ def on_join_room(data):
     # broadcasting시 동일한 네임스페이스에 연결된 모든 클라이언트에게 메시지를 송신함
     # include_self=False 이므로 본인을 제외하고 broadcasting
     # room=room_id인 room에 메시지를 송신합니다. broadcast의 값이 True이어야 합니다.
-    print("user-connect active")
     # add to user list maintained on server
     if room_id not in users_in_room:
         users_in_room[room_id] = [sid]
@@ -104,16 +101,14 @@ def on_data(data):
             data["type"], sender_sid, target_sid))
     socketio.emit('data', data, room=target_sid)
 
+
 @socketio.on("chatting")
-def message(message):
-    print("Hello I'm Received")
+def send_message(message):
     sender = message["sender"]
     text = message["text"]
     room_id = message["room_id"]
-    print(room_id ," : ",sender ,":",text)
-    
     # broadcast to others in the room
-    emit("chatting", message , broadcast=True, include_self=False, room=room_id)
+    emit("chatting", message , broadcast=True, include_self=True, room=room_id)
 
 if __name__ == '__main__':
     socketio.run(app,
