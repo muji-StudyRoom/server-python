@@ -151,7 +151,7 @@ def send_message(message):
 ### elk
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
-    doc_chatting= {"des" : "chatting", "room_id" : room_id, "sid" : sid, "chatting message" : message,"@timestamp": utc_time()}
+    doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_chatting)
 
     # broadcast to others in the room
