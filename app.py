@@ -1,5 +1,9 @@
 from flask import Flask, render_template, request, session
 from flask_socketio import SocketIO, emit, join_room, send
+from elasticsearch import Elasticsearch
+from elasticsearch import helpers
+import datetime
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "test key"
@@ -8,6 +12,21 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 users_in_room = {}
 rooms_sid = {}
 names_sid = {}
+
+
+### elk, kibana
+es = Elasticsearch('http://192.168.56.141:9200') ## 변경
+es.info()
+
+def utc_time():  
+    return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
+def make_index(es, index_name):
+    if es.indices.exists(index=index_name):
+        es.indices.delete(index=index_name)
+        es.indices.create(index=index_name)
+
+index_name= 'webrtc_room'
 
 @app.route('/')
 def hello():
@@ -32,6 +51,14 @@ def on_create_room(data):
     print(session)
     emit("join-request")
 
+ # elk
+    room_id = data["room_id"]
+    date = datetime.datetime.now()
+    now = date.strftime('%m/%d/%y %H:%M:%S')
+    doc_create= {"des":"create room", "room_id":room_id, "@timestamp": utc_time()}
+    es.index(index=index_name, doc_type="log", body=doc_create)
+
+
 
 @socketio.on("join-room")
 def on_join_room(data):
@@ -45,6 +72,14 @@ def on_join_room(data):
     names_sid[sid] = display_name
     # broadcast to others in the room
     print("[{}] New member joined: {}<{}>".format(room_id, display_name, sid))
+
+### elk
+    date = datetime.datetime.now()
+    now = date.strftime('%m/%d/%y %H:%M:%S')
+    doc_join= {"des":"New member joined", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
+    es.index(index=index_name, doc_type="log", body=doc_join)   
+   
+   
     emit("user-connect", {"sid": sid, "name": display_name},
         broadcast=True, include_self=False, room=room_id)
     # broadcasting시 동일한 네임스페이스에 연결된 모든 클라이언트에게 메시지를 송신함
@@ -72,6 +107,13 @@ def on_disconnect():
     sid = request.sid
     room_id = rooms_sid[sid]
     display_name = names_sid[sid]
+
+### elk
+    now = datetime.datetime.now()
+    now = now.strftime('%m/%d/%y %H:%M:%S')
+    doc_disconnect= {"des":"user-disconnect", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
+    es.index(index=index_name, doc_type="log", body=doc_disconnect)
+
 
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
     emit("user-disconnect", {"sid": sid},
@@ -105,6 +147,13 @@ def send_message(message):
     sender = message["sender"]
     text = message["text"]
     room_id = message["room_id"]
+
+### elk
+    date = datetime.datetime.now()
+    now = date.strftime('%m/%d/%y %H:%M:%S')
+    doc_chatting= {"des" : "chatting", "room_id" : room_id, "sid" : sid, "chatting message" : message,"@timestamp": utc_time()}
+    es.index(index=index_name, doc_type="log", body=doc_chatting)
+
     # broadcast to others in the room
     emit("chatting", message , broadcast=True, include_self=True, room=room_id)
 
@@ -115,3 +164,4 @@ if __name__ == '__main__':
         debug=True 
         #ssl_context=("cert.pem", "key.pem")
     )
+    make_index(es, index_name)
