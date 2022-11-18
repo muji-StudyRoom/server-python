@@ -10,4 +10,4 @@ RUN pip3 install -r requirements.txt
 
 RUN python 
 
-ENTRYPOINT ["python", "app.py"]
+ENTRYPOINT ["python", "Server.py"]
