@@ -161,7 +161,7 @@ if __name__ == '__main__':
     socketio.run(app,
         host="0.0.0.0",
         port=5000,
-        debug=True 
-        #ssl_context=("cert.pem", "key.pem")
+        debug=True, 
+        ssl_context=("cert.pem", "key.pem")
     )
     make_index(es, index_name)
