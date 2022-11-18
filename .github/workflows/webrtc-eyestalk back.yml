@@ -6,11 +6,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v2
-      - 
-        name: "Automated Version Bump"
+      - uses: actions/checkout@v2
+      - name: Checkout
         id: version-bump
         uses: "phips28/gh-action-bump-version@master"
         with:
