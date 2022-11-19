@@ -29,7 +29,6 @@ jobs:
         with:
           images: roheejae/eyestalk-back
           tag-semver: |
-            {{version}}
             {{major}}.{{minor}}
       -
         name: Set up Docker Buildx
