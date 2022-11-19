@@ -1,24 +1,18 @@
 name: webrtc-eyestalk Actions
 
 on: [push]
-
-jobs:
+  jobs:        
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Checkout
-        id: version-bump
-        uses: 'phips28/gh-action-bump-version@master'
+      - name: Version tag
+        uses: Jorricks/action-python-autotagging@1.0.1
+
         with:
-          tag-prefix: ''
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - 
-        name: 'Output Step'
-        env:
-          NEW_TAG: ${{ steps.version-bump.outputs.newTag }}
-        run: echo "new tag $NEW_TAG"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: src/your_package/__init__.py
+          variable: __version__
       -
         name: Login to DockerHub
         uses: docker/login-action@v1.10.0
@@ -31,13 +25,14 @@ jobs:
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v1
         with:
-          images: kimnamju/webrtc-eyestalk-back    
+          images: kimnamju/webrtc-eyestalk-back      
       
       -
         name: Build and push
         uses: docker/build-push-action@v2.6.1
         with:
           context: .
-          file: ./Dockerfile 
+          file: ./Dockerfile
+          platforms: linux/amd64
           push: true
           tags: kimnamju/webrtc-eyestalk-back:latest, kimnamju/webrtc-eyestalk-back:${{ steps.version-bump.outputs.newTag }}
