@@ -1,12 +1,22 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, jsonify
 from flask_socketio import SocketIO, emit, join_room, send
 from elasticsearch import Elasticsearch
+from model import User, Room
 from elasticsearch import helpers
+from config import db_url
 import datetime
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text, select, create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
+# 데이터베이스 연결부분 추가
 
+db = SQLAlchemy()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "test key"
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+db.init_app(app)
+
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 users_in_room = {}
@@ -15,31 +25,62 @@ names_sid = {}
 
 
 ### elk, kibana
-es = Elasticsearch('http://192.168.56.141:9200') ## 변경
-es.info()
+# es = Elasticsearch('http://192.168.56.141:9200')  ## 변경
+# es.info()
+def checkSession():
+    sql = "select r.room_name,u.user_nickname from room r join user u on r.room_idx = u.room_idx"
+    result = db.engine.execute(sql)
 
-def utc_time():  
+    room_list = {}
+    for rs in result:
+        if rs['room_name'] in room_list:
+            room_list[rs['room_name']].append({rs['user_nickname']: rs['user_nickname']})
+        else:
+            room_list[rs['room_name']] = [{rs['user_nickname']: rs['user_nickname']}]
+
+    print(room_list)
+    return room_list
+
+
+def createRoom(data):
+    sql = f'insert into room(room_name, room_capacity, room_password, room_enter_user) values ({data["room_name"]}' \ 
+            f', {data["room_capacity"]}, {data["room_password"]}, {data["room_enter_user"]})'
+    result = db.engine.execute(sql)
+    return result
+
+
+def joinUser():
+    sql = "insert into "
+
+
+def utc_time():
     return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
 
 def make_index(es, index_name):
     if es.indices.exists(index=index_name):
         es.indices.delete(index=index_name)
         es.indices.create(index=index_name)
 
-index_name= 'webrtc_room'
 
-@app.route('/')
-def hello():
-    return 'hello'
+index_name = 'webrtc_room'
 
-@socketio.on('connect') ################### test
+
+# @app.route('/')
+# def hello():
+#     checkSession()
+#     return 'hello'
+
+
+@socketio.on('connect')  ################### test
 def test_connect():
     print("connection is successs")
 
 
-@app.route("/join", methods=["GET"])
-def join():
-    return render_template("join.html")
+# @app.route("/join", methods=["GET"])
+# def join():
+#     return render_template("join.html")
+
 
 @socketio.on("create-room")
 def on_create_room(data):
@@ -48,16 +89,16 @@ def on_create_room(data):
         "mute_audio": data["mute_audio"],
         "mute_video": data["mute_video"]
     }
+    createRoom(data)
     print(session)
     emit("join-request")
 
- # elk
-    room_id = data["room_id"]
-    date = datetime.datetime.now()
-    now = date.strftime('%m/%d/%y %H:%M:%S')
-    doc_create= {"des":"create room", "room_id":room_id, "@timestamp": utc_time()}
-    es.index(index=index_name, doc_type="log", body=doc_create)
-
+    # elk
+    # room_id = data["room_id"]
+    # date = datetime.datetime.now()
+    # now = date.strftime('%m/%d/%y %H:%M:%S')
+    # doc_create = {"des": "create room", "room_id": room_id, "@timestamp": utc_time()}
+    # es.index(index=index_name, doc_type="log", body=doc_create)
 
 
 @socketio.on("join-room")
@@ -65,7 +106,7 @@ def on_join_room(data):
     sid = request.sid
     room_id = data["room_id"]
     display_name = session[room_id]["name"]
-    
+
     # register sid to the room
     join_room(room_id)
     rooms_sid[sid] = room_id
@@ -73,15 +114,14 @@ def on_join_room(data):
     # broadcast to others in the room
     print("[{}] New member joined: {}<{}>".format(room_id, display_name, sid))
 
-### elk
-    date = datetime.datetime.now()
-    now = date.strftime('%m/%d/%y %H:%M:%S')
-    doc_join= {"des":"New member joined", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
-    es.index(index=index_name, doc_type="log", body=doc_join)   
-   
-   
+    ### elk
+    # date = datetime.datetime.now()
+    # now = date.strftime('%m/%d/%y %H:%M:%S')
+    # doc_join = {"des": "New member joined", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
+    # es.index(index=index_name, doc_type="log", body=doc_join)
+
     emit("user-connect", {"sid": sid, "name": display_name},
-        broadcast=True, include_self=False, room=room_id)
+         broadcast=True, include_self=False, room=room_id)
     # broadcasting시 동일한 네임스페이스에 연결된 모든 클라이언트에게 메시지를 송신함
     # include_self=False 이므로 본인을 제외하고 broadcasting
     # room=room_id인 room에 메시지를 송신합니다. broadcast의 값이 True이어야 합니다.
@@ -100,6 +140,7 @@ def on_join_room(data):
 
     print("\n users: ", users_in_room, "\n")
 
+
 # leave_room은 사용하지 않아도 되는지?
 
 @socketio.on("disconnect")
@@ -108,12 +149,11 @@ def on_disconnect():
     room_id = rooms_sid[sid]
     display_name = names_sid[sid]
 
-### elk
-    now = datetime.datetime.now()
-    now = now.strftime('%m/%d/%y %H:%M:%S')
-    doc_disconnect= {"des":"user-disconnect", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
-    es.index(index=index_name, doc_type="log", body=doc_disconnect)
-
+    ### elk
+    # now = datetime.datetime.now()
+    # now = now.strftime('%m/%d/%y %H:%M:%S')
+    # doc_disconnect = {"des": "user-disconnect", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
+    # es.index(index=index_name, doc_type="log", body=doc_disconnect)
 
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
     emit("user-disconnect", {"sid": sid},
@@ -148,20 +188,22 @@ def send_message(message):
     text = message["text"]
     room_id = message["room_id"]
 
-### elk
-    date = datetime.datetime.now()
-    now = date.strftime('%m/%d/%y %H:%M:%S')
-    doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
-    es.index(index=index_name, doc_type="log", body=doc_chatting)
+    ### elk
+    # date = datetime.datetime.now()
+    # now = date.strftime('%m/%d/%y %H:%M:%S')
+    # doc_chatting = {"des": "chatting", "room_id": room_id, "chatting message": text, "@timestamp": utc_time()}
+    # es.index(index=index_name, doc_type="log", body=doc_chatting)
 
     # broadcast to others in the room
-    emit("chatting", message , broadcast=True, include_self=True, room=room_id)
+    emit("chatting", message, broadcast=True, include_self=True, room=room_id)
+
 
 if __name__ == '__main__':
     socketio.run(app,
-        host="0.0.0.0",
-        port=5000,
-        debug=True, 
-        ssl_context=("cert.pem", "key.pem")
-    )
-    make_index(es, index_name)
+                 host="0.0.0.0",
+                 port=5000,
+                 debug=True
+                 # ssl_context=("cert.pem", "key.pem")
+                 )
+    db.create_all()
+    # make_index(es, index_name)
