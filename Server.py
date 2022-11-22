@@ -54,37 +54,6 @@ names_sid = {}
 #     sql = 'insert into user (user_nickname, room_idx,socket_id) values (\"{data["room_id"]}\",{data[)'
 #
 
-def getParam(data):
-    params = {
-        'userNickname': data['userNickname'],
-        'roomName': data['roomName'],
-        'roomPassword': data['roomPassword'],
-        'roomCapacity': data['roomCapacity']
-    }
-    return params
-
-
-# def get_session_info():
-#     # response = requests.get()
-#
-#     # return response
-
-
-def create_room_request(data):
-    response = requests.post('http://localhost:8080/room', getParam(data))
-    return response
-
-
-def enter_user_request(data):
-    response = requests.post(f'http://localhost:8080/room//room/{data["roomName"]}/enter/{data["roomPassword"]}',
-                             getParam(data))
-    return response
-
-
-def exit_room(data):
-    response = requests.patch(f'http://localhost:8080/room/{data["room_id"]}?user={data["user_id"]}', getParam(data))
-    return response
-
 
 def utc_time():
     return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
@@ -114,17 +83,22 @@ def on_create_room(data):
 
     print(data)
     response = create_room_request(data)
-
-    print(response)
-
-    # print(session)
+    # response 상태코드가 정상(로직이 정상적으로 처리되었을 경우)
     emit("join-request")
+    # 상태코드 에러 => emit("fail-create-room")
+
+
+    # if response
+    # print(response)
+    # print(session)
+
     # elk
     # room_id = data["room_id"]
     # date = datetime.datetime.now()
     # now = date.strftime('%m/%d/%y %H:%M:%S')
     # doc_create = {"des": "create room", "room_id": room_id, "@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_create)
+
 
 
 @socketio.on("join-room")
@@ -181,6 +155,8 @@ def on_disconnect():
     # doc_disconnect = {"des": "user-disconnect", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_disconnect)
 
+    exit_room(sid)
+
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
     emit("user-disconnect", {"sid": sid},
          broadcast=True, include_self=False, room=room_id)
@@ -222,6 +198,41 @@ def send_message(message):
 
     # broadcast to others in the room
     emit("chatting", message, broadcast=True, include_self=True, room=room_id)
+
+
+
+
+def getParam(data, socketID):
+    params = {
+        'userNickname': data['userNickname'],
+        'roomName': data['roomName'],
+        'roomPassword': data['roomPassword'],
+        'roomCapacity': data['roomCapacity'],
+        'socket_id': socketID
+    }
+    return params
+
+
+# def get_session_info():
+#     # response = requests.get()
+#
+#     # return response
+
+
+def create_room_request(data, socketID):
+    response = requests.post('http://localhost:8080/room', getParam(data, socketID))
+    return response
+
+
+def enter_user_request(data, socketID):
+    response = requests.post(f'http://localhost:8080/room//room/{data["roomName"]}/enter/{data["roomPassword"]}',
+                             getParam(data, socketID))
+    return response
+
+
+def exit_room(data, socketID):
+    response = requests.patch(f'http://localhost:8080/room/{data["room_id"]}?user={data["user_id"]}', getParam(data, socketID))
+    return response
 
 
 if __name__ == '__main__':
