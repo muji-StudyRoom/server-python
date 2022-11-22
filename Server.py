@@ -1,3 +1,4 @@
+import requests
 from flask import Flask, render_template, request, session, jsonify
 from flask_socketio import SocketIO, emit, join_room, send
 # from elasticsearch import Elasticsearch
@@ -5,17 +6,17 @@ from model import User, Room
 # from elasticsearch import helpers
 from config import db_url
 import datetime
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text, select, create_engine
-from sqlalchemy.orm import Session, sessionmaker
+# from flask_sqlalchemy import SQLAlchemy
+# from sqlalchemy import text, select, create_engine
+# from sqlalchemy.orm import Session, sessionmaker
 
 # 데이터베이스 연결부분 추가
 
-db = SQLAlchemy()
+# db = SQLAlchemy()
 app = Flask(__name__)
 # app.config['SECRET_KEY'] = "test key"
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-db.init_app(app)
+# app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+# db.init_app(app)
 
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -27,29 +28,62 @@ names_sid = {}
 ### elk, kibana
 # es = Elasticsearch('http://192.168.56.141:9200')  ## 변경
 # es.info()
-def checkSession():
-    sql = "select r.room_name,u.user_nickname from room r join user u on r.room_idx = u.room_idx"
-    result = db.engine.execute(sql)
-
-    room_list = {}
-    for rs in result:
-        if rs['room_name'] in room_list:
-            room_list[rs['room_name']].append({rs['user_nickname']: rs['user_nickname']})
-        else:
-            room_list[rs['room_name']] = [{rs['user_nickname']: rs['user_nickname']}]
-
-    print(room_list)
-    return room_list
-
-
-def createRoom(data):
-    sql = f'insert into room(room_name, room_capacity, room_password, room_enter_user) values (\"{data["room_id"]}\", {data["room_allowed"]}, \"{data["room_pwd"]}\", {1})'
-    result = db.engine.execute(sql)
-    return result
+# def checkSession(room_id):
+#     sql = f"select r.room_name,u.user_nickname from room r join user u on r.room_idx = u.room_idx" \
+#           f" where r.room_name = \'{room_id}\'"
+#     result = db.engine.execute(sql)
+#
+#     room_list = {}
+#     for rs in result:
+#         if rs['room_name'] in room_list:
+#             room_list[rs['room_name']].append({rs['user_nickname']: rs['user_nickname']})
+#         else:
+#             room_list[rs['room_name']] = [{rs['user_nickname']: rs['user_nickname']}]
+#
+#     print(room_list)
+#     return room_list
 
 
-def joinUser():
-    sql = "insert into "
+# def createRoom(data):
+#     sql = f'insert into room(room_name, room_capacity, room_password, room_enter_user) values (\"{data["room_id"]}\", {data["room_allowed"]}, \"{data["room_pwd"]}\", {1})'
+#     result = db.engine.execute(sql)
+#     return result
+#
+#
+# def joinUser(data):
+#     sql = 'insert into user (user_nickname, room_idx,socket_id) values (\"{data["room_id"]}\",{data[)'
+#
+
+def getParam(data):
+    params = {
+        'userNickname': data['userNickname'],
+        'roomName': data['roomName'],
+        'roomPassword': data['roomPassword'],
+        'roomCapacity': data['roomCapacity']
+    }
+    return params
+
+
+# def get_session_info():
+#     # response = requests.get()
+#
+#     # return response
+
+
+def create_room_request(data):
+    response = requests.post('http://localhost:8080/room', getParam(data))
+    return response
+
+
+def enter_user_request(data):
+    response = requests.post(f'http://localhost:8080/room//room/{data["roomName"]}/enter/{data["roomPassword"]}',
+                             getParam(data))
+    return response
+
+
+def exit_room(data):
+    response = requests.patch(f'http://localhost:8080/room/{data["room_id"]}?user={data["user_id"]}', getParam(data))
+    return response
 
 
 def utc_time():
@@ -65,34 +99,26 @@ def make_index(es, index_name):
 index_name = 'webrtc_room'
 
 
-# @app.route('/')
-# def hello():
-#     checkSession()
-#     return 'hello'
-
-
 @socketio.on('connect')  ################### test
 def test_connect():
     print("connection is successs")
 
 
-# @app.route("/join", methods=["GET"])
-# def join():
-#     return render_template("join.html")
-
-
 @socketio.on("create-room")
 def on_create_room(data):
-    session[data["room_id"]] = {
-        "name": data["user_nickname"],
-        "mute_audio": data["mute_audio"],
-        "mute_video": data["mute_video"]
-    }
+    # session[data["room_id"]] = {
+    #     "name": data["user_nickname"],
+    #     "mute_audio": data["mute_audio"],
+    #     "mute_video": data["mute_video"]
+    # }
+
     print(data)
-    createRoom(data)
-    print(session)
+    response = create_room_request(data)
+
+    print(response)
+
+    # print(session)
     emit("join-request")
-    checkSession()
     # elk
     # room_id = data["room_id"]
     # date = datetime.datetime.now()
@@ -205,5 +231,5 @@ if __name__ == '__main__':
                  debug=True
                  # ssl_context=("cert.pem", "key.pem")
                  )
-    db.create_all()
+    # db.create_all()
     # make_index(es, index_name)
