@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request, session, jsonify
 from flask_socketio import SocketIO, emit, join_room, send
-from elasticsearch import Elasticsearch
+# from elasticsearch import Elasticsearch
 from model import User, Room
-from elasticsearch import helpers
+# from elasticsearch import helpers
 from config import db_url
 import datetime
 from flask_sqlalchemy import SQLAlchemy
@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 db = SQLAlchemy()
 app = Flask(__name__)
-app.config['SECRET_KEY'] = "test key"
+# app.config['SECRET_KEY'] = "test key"
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 db.init_app(app)
 
@@ -43,8 +43,7 @@ def checkSession():
 
 
 def createRoom(data):
-    sql = f'insert into room(room_name, room_capacity, room_password, room_enter_user) values ({data["room_name"]}' \ 
-            f', {data["room_capacity"]}, {data["room_password"]}, {data["room_enter_user"]})'
+    sql = f'insert into room(room_name, room_capacity, room_password, room_enter_user) values (\"{data["room_id"]}\", {data["room_allowed"]}, \"{data["room_pwd"]}\", {1})'
     result = db.engine.execute(sql)
     return result
 
@@ -85,14 +84,15 @@ def test_connect():
 @socketio.on("create-room")
 def on_create_room(data):
     session[data["room_id"]] = {
-        "name": data["display_name"],
+        "name": data["user_nickname"],
         "mute_audio": data["mute_audio"],
         "mute_video": data["mute_video"]
     }
+    print(data)
     createRoom(data)
     print(session)
     emit("join-request")
-
+    checkSession()
     # elk
     # room_id = data["room_id"]
     # date = datetime.datetime.now()
