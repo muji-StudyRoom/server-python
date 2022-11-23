@@ -1,6 +1,5 @@
 import json
 import requests
-import redis
 from flask import Flask, render_template, request, session, jsonify
 from flask_socketio import SocketIO, emit, join_room, send
 # from elasticsearch import Elasticsearch
@@ -139,10 +138,10 @@ def on_join_room(data):
 # leave_room은 사용하지 않아도 되는지?
 
 @socketio.on("disconnect")
-def on_disconnect(data):
+def on_disconnect():
     sid = request.sid
-    # room_id = rooms_sid[sid]
-    room_id = data["roomName"]
+    room_id = rooms_sid[sid]
+
     # display_name = names_sid[sid]
 
     ### elk
@@ -157,11 +156,11 @@ def on_disconnect(data):
     emit("user-disconnect", {"sid": sid},
          broadcast=True, include_self=False, room=room_id)
 
-    users_in_room[room_id].remove(sid)
-    if len(users_in_room[room_id]) == 0:
-        users_in_room.pop(room_id)
-
-    rooms_sid.pop(sid)
+    # users_in_room[room_id].remove(sid)
+    # if len(users_in_room[room_id]) == 0:
+    #     users_in_room.pop(room_id)
+    #
+    # rooms_sid.pop(sid)
     names_sid.pop(sid)
 
     print("\nusers: ", users_in_room, "\n")
@@ -224,9 +223,8 @@ def enter_user_request(data, socketID):
     return response
 
 
-def exit_room(data, socketID):
-    response = requests.patch(f'http://localhost:8080/room/{data["room_id"]}?user={data["user_id"]}',
-                              getParam(data, socketID))
+def exit_room(socketID):
+    response = requests.patch(f'http://localhost:8080/room?socketId={socketID}')
     return response
 
 
