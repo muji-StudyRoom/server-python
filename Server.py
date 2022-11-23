@@ -20,7 +20,7 @@ app = Flask(__name__)
 # app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 # db.init_app(app)
 
-socketio = SocketIO(app, message_queue='redis://', cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 users_in_room = {}
 rooms_sid = {}
@@ -98,17 +98,17 @@ def on_create_room(data):
 @socketio.on("join-room")
 def on_join_room(data):
     sid = request.sid
-    room_id = data["room_id"]
-    nickname = data["userNickname"]
+    room_name = data["roomName"]
+    user_nickname = data["userNickname"]
 
     enter_user_request(data, sid)
 
     # register sid to the room
-    join_room(room_id)
-    rooms_sid[sid] = room_id
-    names_sid[sid] = nickname
+    join_room(room_name)
+    # rooms_sid[sid] = room_id
+    # names_sid[sid] = nickname
     # broadcast to others in the room
-    print("[{}] New member joined: {}<{}>".format(room_id, nickname, sid))
+    print("[{}] New member joined: {}<{}>".format(room_name, user_nickname, sid))
 
     ### elk
     # date = datetime.datetime.now()
@@ -116,7 +116,7 @@ def on_join_room(data):
     # doc_join = {"des": "New member joined", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_join)
 
-    emit("user-connect", {"sid": sid, "name": nickname}, broadcast=True, include_self=False, room=room_id)
+    emit("user-connect", {"sid": sid, "name": user_nickname}, broadcast=True, include_self=False, room=room_name)
     # broadcasting시 동일한 네임스페이스에 연결된 모든 클라이언트에게 메시지를 송신함
     # include_self=False 이므로 본인을 제외하고 broadcasting
     # room=room_id 인 room에 메시지를 송신합니다. broadcast의 값이 True이어야 합니다.
@@ -183,13 +183,11 @@ def on_data(data):
 @socketio.on("chatting")
 def send_message(message):
     room_id = message["room_id"]
-
     ### elk
     # date = datetime.datetime.now()
     # now = date.strftime('%m/%d/%y %H:%M:%S')
     # doc_chatting = {"des": "chatting", "room_id": room_id, "chatting message": text, "@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_chatting)
-
     # broadcast to others in the room
     emit("chatting", message, broadcast=True, include_self=True, room=room_id)
 
@@ -230,6 +228,21 @@ def exit_room(data, socketID):
     response = requests.patch(f'http://localhost:8080/room/{data["room_id"]}?user={data["user_id"]}',
                               getParam(data, socketID))
     return response
+
+
+@app.route("/")
+def read_session_info_room():
+    response = requests.get(f'http://localhost:8080/room/')
+    print(response)
+    return response.json()
+
+
+@app.route("/user")
+def read_session_info_user():
+    room_id = 1;
+    response = requests.get(f'http://localhost:8080/user/{room_id}')
+    print(response)
+    return response.json()
 
 
 if __name__ == '__main__':
