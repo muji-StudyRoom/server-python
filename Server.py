@@ -120,17 +120,17 @@ def on_join_room(data):
     # include_self=False 이므로 본인을 제외하고 broadcasting
     # room=room_id 인 room에 메시지를 송신합니다. broadcast의 값이 True이어야 합니다.
     # add to user list maintained on server
-    if room_id not in users_in_room:
-        users_in_room[room_id] = [sid]
-        emit("user-list", {"my_id": sid})  # send own id only
-    else:
-        usrlist = {u_id: names_sid[u_id]
-                   for u_id in users_in_room[room_id]}
-        # send list of existing users to the new member
-        print(usrlist)
-        emit("user-list", {"list": usrlist, "my_id": sid})
-        # add new member to user list maintained on server
-        users_in_room[room_id].append(sid)
+    # if room_id not in users_in_room:
+    #     users_in_room[room_id] = [sid]
+    #     emit("user-list", {"my_id": sid})  # send own id only
+    # else:
+    #     usrlist = {u_id: names_sid[u_id]
+    #                for u_id in users_in_room[room_id]}
+    #     # send list of existing users to the new member
+    #     print(usrlist)
+    #     emit("user-list", {"list": usrlist, "my_id": sid})
+    #     # add new member to user list maintained on server
+    #     users_in_room[room_id].append(sid)
 
     print("\n users: ", users_in_room, "\n")
 
