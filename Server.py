@@ -71,15 +71,16 @@ def on_create_room(data):
     # }
     room_id = data["roomName"]
     sid = request.sid
+    user_nickname = data["userNickname"]
     print(sid)
-    userNickname = data["userNickname"]
+
     print(data)
     response = create_room_request(data, sid)
     print("testtttting")
     # response 상태코드가 정상(로직이 정상적으로 처리되었을 경우)
     if response.status_code == 200:
         join_room(room_id)
-        emit("user-connect", {"sid": sid, "name": userNickname}, broadcast=True, include_self=False, room=room_id)
+        emit("user-connect", {"sid": sid, "name": user_nickname}, broadcast=True, include_self=False, room=room_id)
 
     # 상태코드 에러 => emit("fail-create-room")
     else:
@@ -140,6 +141,7 @@ def on_join_room(data):
 @socketio.on("disconnect")
 def on_disconnect():
     sid = request.sid
+    exit_room(sid)
     room_id = rooms_sid[sid]
 
     # display_name = names_sid[sid]
@@ -150,11 +152,10 @@ def on_disconnect():
     # doc_disconnect = {"des": "user-disconnect", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_disconnect)
 
-    exit_room(sid)
 
-    print("[{}] Member left: <{}>".format(room_id, sid))
-    emit("user-disconnect", {"sid": sid},
-         broadcast=True, include_self=False, room=room_id)
+
+    # print("[{}] Member left: <{}>".format(room_id, sid))
+    emit("user-disconnect", {"sid": sid}, broadcast=True, include_self=False, room=room_id)
 
     # users_in_room[room_id].remove(sid)
     # if len(users_in_room[room_id]) == 0:
