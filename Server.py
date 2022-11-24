@@ -1,5 +1,6 @@
 import json
 import requests
+import redis
 from flask import Flask, render_template, request, session, jsonify
 from flask_socketio import SocketIO, emit, join_room, send
 # from elasticsearch import Elasticsearch
@@ -16,9 +17,9 @@ app = Flask(__name__)
 # app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 # db.init_app(app)
 
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, message_queue="redis://localhost:6379", cors_allowed_origins="*")
 
-users_in_room = {}
+#users_in_room = {}
 rooms_sid = {}
 names_sid = {}
 
@@ -117,12 +118,18 @@ def on_join_room(data):
     # include_self=False 이므로 본인을 제외하고 broadcasting
     # room=room_id 인 room에 메시지를 송신합니다. broadcast의 값이 True이어야 합니다.
     # add to user list maintained on server
-    # if room_id not in users_in_room:
-    #     users_in_room[room_id] = [sid]
-    #     emit("user-list", {"my_id": sid})  # send own id only
+    users_in_room = read_session_info_user(room_name)
+    print(users_in_room)
+    #for user in users_in_room:
+        #if sid == user['socketId']:
+        #    emit("user-list", {"my_id": sid})
+        #else:
+    emit("user-list", {"list": users_in_room, "my_id": sid}, broadcast=True, include_self=True)
+    #if room_name not in users_in_room:
+    #    emit("user-list", {"my_id": sid}) # send own id only
     # else:
     #     usrlist = {u_id: names_sid[u_id]
-    #                for u_id in users_in_room[room_id]}
+    #                for u_id in users_in_room[room_name]}
     #     # send list of existing users to the new member
     #     print(usrlist)
     #     emit("user-list", {"list": usrlist, "my_id": sid})
@@ -160,7 +167,7 @@ def on_disconnect():
     #
     # rooms_sid.pop(sid)
 
-    print("\nusers: ", users_in_room, "\n")
+    #print("\nusers: ", users_in_room, "\n")
 
 
 @socketio.on("data")
@@ -243,8 +250,7 @@ def read_session_info_room():
 
 
 @app.route("/user")
-def read_session_info_user():
-    room_name = "test"
+def read_session_info_user(room_name):
     response = requests.get(f'http://localhost:8080/user/{room_name}')
     print(response.json())
     return response.json()
