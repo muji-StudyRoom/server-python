@@ -7,9 +7,6 @@ from flask_socketio import SocketIO, emit, join_room, send
 # from elasticsearch import helpers
 import datetime
 
-# from flask_sqlalchemy import SQLAlchemy
-# from sqlalchemy import text, select, create_engine
-# from sqlalchemy.orm import Session, sessionmaker
 
 # 데이터베이스 연결부분 추가
 
@@ -66,9 +63,8 @@ def test_connect():
 def on_create_room(data):
     # session[data["room_id"]] = {
     #     "name": data["user_nickname"],
-    #     "mute_audio": data["mute_audio"],
-    #     "mute_video": data["mute_video"]
     # }
+
     room_id = data["roomName"]
     sid = request.sid
     user_nickname = data["userNickname"]
@@ -142,7 +138,8 @@ def on_join_room(data):
 def on_disconnect():
     sid = request.sid
     exit_room(sid)
-    room_id = rooms_sid[sid]
+    print("#################### after disconnect###########################")
+
 
     # display_name = names_sid[sid]
 
@@ -155,14 +152,13 @@ def on_disconnect():
 
 
     # print("[{}] Member left: <{}>".format(room_id, sid))
-    emit("user-disconnect", {"sid": sid}, broadcast=True, include_self=False, room=room_id)
+    #emit("user-disconnect", {"sid": sid}, broadcast=True, include_self=False, room=room_id)
 
     # users_in_room[room_id].remove(sid)
     # if len(users_in_room[room_id]) == 0:
     #     users_in_room.pop(room_id)
     #
     # rooms_sid.pop(sid)
-    names_sid.pop(sid)
 
     print("\nusers: ", users_in_room, "\n")
 
@@ -219,13 +215,23 @@ def create_room_request(data, socketID):
 
 
 def enter_user_request(data, socketID):
-    response = requests.post(f'http://localhost:8080/room//room/{data["roomName"]}/enter/{data["roomPassword"]}',
-                             getParam(data, socketID))
+    print(data)
+    response = requests.post(f'http://localhost:8080/room/{data["roomName"]}/enter/{data["roomPassword"]}',
+                             data=getParam(data, socketID),
+                             headers={'Content-Type': 'application/json'},
+                             verify=False
+                             )
+
+    print(f'http://localhost:8080/room/{data["roomName"]}/enter/{data["roomPassword"]}')
     return response
 
 
 def exit_room(socketID):
-    response = requests.patch(f'http://localhost:8080/room?socketId={socketID}')
+    response = requests.post(f'http://localhost:8080/room/exit?socketId={socketID}',
+                             headers={'Content-Type': 'application/json'},
+                             verify=False
+                             )
+    print("################## response #############  ", response)
     return response
 
 
@@ -238,9 +244,9 @@ def read_session_info_room():
 
 @app.route("/user")
 def read_session_info_user():
-    room_id = 1;
-    response = requests.get(f'http://localhost:8080/user/{room_id}')
-    print(response)
+    room_name = "test"
+    response = requests.get(f'http://localhost:8080/user/{room_name}')
+    print(response.json())
     return response.json()
 
 
