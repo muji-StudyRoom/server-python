@@ -6,6 +6,6 @@ COPY . /app/server
 
 WORKDIR /app/server
 # 환경변수 세팅 및 python module 설치
-RUN pip3 install -r requirements.txt
+RUN pip install -r requirements.txt
 
 ENTRYPOINT ["python", "Server.py"]
