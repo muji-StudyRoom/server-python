@@ -93,7 +93,7 @@
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
@@ -122,7 +122,8 @@
       <workItem from="1669294169378" duration="515000" />
       <workItem from="1669340647040" duration="1208000" />
       <workItem from="1669356418339" duration="5244000" />
-      <workItem from="1669530693184" duration="210000" />
+      <workItem from="1669530693184" duration="3023000" />
+      <workItem from="1669540780046" duration="982000" />
     </task>
     <servers />
   </component>

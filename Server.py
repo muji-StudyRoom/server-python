@@ -30,7 +30,8 @@ print(ES_IP, " ## ", ES_PORT, " ## ", SPRING_IP, " ## ", SPRING_PORT, " ## ", RE
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "test key"
-socketio = SocketIO(app, message_queue=f'{REDIS_IP}:{REDIS_PORT}', cors_allowed_origins="*")
+# , message_queue=f'{REDIS_IP}:{REDIS_PORT}'
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 users_in_room = {}
 rooms_sid = {}
