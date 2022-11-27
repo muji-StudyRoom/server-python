@@ -206,7 +206,7 @@ def getParam(data, socketID):
 
 
 def create_room_request(data, socketId):
-    response = requests.post(f'{SPRING_IP}:{SPRING_PORT}/room',
+    response = requests.post(f'http://{SPRING_IP}:{SPRING_PORT}/room',
                              data=getParam(data, socketId),
                              headers={'Content-Type': 'application/json'},
                              verify=False
@@ -216,7 +216,7 @@ def create_room_request(data, socketId):
 
 def enter_user_request(data, socketId):
     print(data)
-    response = requests.post(f'{SPRING_IP}:{SPRING_PORT}/room/enter',
+    response = requests.post(f'http://{SPRING_IP}:{SPRING_PORT}/room/enter',
                              data=getParam(data, socketId),
                              headers={'Content-Type': 'application/json'},
                              verify=False
@@ -225,7 +225,7 @@ def enter_user_request(data, socketId):
 
 
 def exit_room(socketID):
-    response = requests.post(f'{SPRING_IP}:{SPRING_PORT}/room/exit?socketId={socketID}',
+    response = requests.post(f'http://{SPRING_IP}:{SPRING_PORT}/room/exit?socketId={socketID}',
                              headers={'Content-Type': 'application/json'},
                              verify=False
                              )
