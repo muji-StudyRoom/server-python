@@ -30,7 +30,7 @@ print(ES_IP, " ## ", ES_PORT, " ## ", SPRING_IP, " ## ", SPRING_PORT, " ## ", RE
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "test key"
-socketio = SocketIO(app, message_queue= f'{REDIS_IP}:{REDIS_PORT}', cors_allowed_origins="*")
+socketio = SocketIO(app, message_queue=f'{REDIS_IP}:{REDIS_PORT}', cors_allowed_origins="*")
 
 users_in_room = {}
 rooms_sid = {}
@@ -212,15 +212,14 @@ def create_room_request(data, socketId):
                              )
     return response
 
+
 def enter_user_request(data, socketId):
     print(data)
-    response = requests.post(f'{SPRING_IP}:{SPRING_PORT}/room/{data["roomName"]}/enter/{data["roomPassword"]}',
+    response = requests.post(f'{SPRING_IP}:{SPRING_PORT}/room/enter',
                              data=getParam(data, socketId),
                              headers={'Content-Type': 'application/json'},
                              verify=False
                              )
-
-    print(f'{SPRING_IP}:{SPRING_PORT}/room/{data["roomName"]}/enter/{data["roomPassword"]}')
     return response
 
 
@@ -229,7 +228,6 @@ def exit_room(socketID):
                              headers={'Content-Type': 'application/json'},
                              verify=False
                              )
-    print("################## response #############  ", response)
     return response
 
 
