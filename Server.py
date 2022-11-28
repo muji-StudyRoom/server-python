@@ -30,6 +30,8 @@ print(ES_IP, " ## ", ES_PORT, " ## ", SPRING_IP, " ## ", SPRING_PORT, " ## ", RE
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "test key"
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_REDIS'] = redis.from_url('redis://redis-svc:6379')
 #
 socketio = SocketIO(app, message_queue=f'{REDIS_IP}:{REDIS_PORT}', cors_allowed_origins="*",
                     cors_allowed_method=['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT'])
