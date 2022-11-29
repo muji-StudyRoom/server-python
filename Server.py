@@ -34,7 +34,7 @@ app.config['SECRET_KEY'] = "test key"
 # app.config['SESSION_REDIS'] = redis.from_url('redis://redis-svc:6379')
 #
 socketio = SocketIO(app, message_queue=f'{REDIS_IP}:{REDIS_PORT}', cors_allowed_origins="*")
-io = Emitter({'host': 'redis-svc', 'port': 6379})
+#io = Emitter({'host': 'redis-svc', 'port': 6379})
 users_in_room = {}
 rooms_sid = {}
 names_sid = {}
@@ -74,8 +74,8 @@ def on_create_room(data):
         "name": data["userNickname"]
     }
     print(session)
-    io.In(data["roomName"]).Emit("join-request")
-    #emit("join-request")
+    #io.In(data["roomName"]).Emit("join-request")
+    emit("join-request")
 
     # Spring 로직 추가 => 방 생성
     response = create_room_request(data, request.sid)
@@ -113,9 +113,8 @@ def on_join_room(data):
     # now = date.strftime('%m/%d/%y %H:%M:%S')
     # doc_join= {"des":"New member joined", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_join)   
-    io.In(room_id).Emit("user-connect", {"sid": sid, "name": display_name},include_self=False, room=room_id)
-    #emit("user-connect", {"sid": sid, "name": display_name},
-    #     broadcast=True, include_self=False, room=room_id)
+    #io.In(room_id).Emit("user-connect", {"sid": sid, "name": display_name},include_self=False, room=room_id)
+    emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
     # broadcasting시 동일한 네임스페이스에 연결된 모든 클라이언트에게 메시지를 송신함
     # include_self=False 이므로 본인을 제외하고 broadcasting
     # room=room_id인 room에 메시지를 송신합니다. broadcast의 값이 True이어야 합니다.
@@ -129,8 +128,8 @@ def on_join_room(data):
         # send list of existing users to the new member
         print("usrlist :::::::::::::::::::::::")
         print(usrlist)
-        io.In(room_id).Emit("user-list", {"list": usrlist, "my_id": sid})
-        # emit("user-list", {"list": usrlist, "my_id": sid})
+        #io.In(room_id).Emit("user-list", {"list": usrlist, "my_id": sid})
+        emit("user-list", {"list": usrlist, "my_id": sid})
         # add new member to user list maintained on server
         users_in_room[room_id].append(sid)
 
