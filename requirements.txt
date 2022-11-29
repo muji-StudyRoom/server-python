@@ -21,3 +21,4 @@ redis~=4.3.5
 requests~=2.28.1
 pydantic~=1.10.2
 kombu==5.2.4
+socket.io-emitter==0.1.5.1
