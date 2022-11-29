@@ -115,9 +115,6 @@ def on_join_room(data):
     # es.index(index=index_name, doc_type="log", body=doc_join)   
     #io.In(room_id).Emit("user-connect", {"sid": sid, "name": display_name},include_self=False, room=room_id)
     emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
-    message=[]
-    message['text'] = f'새로운유저 {display_name} 님이 참가하셨습니다. '
-    emit("chatting",message , broadcast=True, include_self=True, room=room_id)
     # broadcasting시 동일한 네임스페이스에 연결된 모든 클라이언트에게 메시지를 송신함
     # include_self=False 이므로 본인을 제외하고 broadcasting
     # room=room_id인 room에 메시지를 송신합니다. broadcast의 값이 True이어야 합니다.
@@ -152,10 +149,9 @@ def on_disconnect():
     # now = now.strftime('%m/%d/%y %H:%M:%S')
     # doc_disconnect= {"des":"user-disconnect", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_disconnect)
-    message = []
-    message['text'] = f' 유저 {display_name} 님이 나가셨습니다. ';
+
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
-    emit("chatting",message , broadcast=True, include_self=True, room=room_id)
+
     emit("user-disconnect", {"sid": sid},
          broadcast=True, include_self=False, room=room_id)
     # Spring 로직 추가
