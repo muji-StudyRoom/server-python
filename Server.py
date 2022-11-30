@@ -1,12 +1,11 @@
-from flask import Flask, render_template, request, session
-from flask_socketio import SocketIO, emit, join_room, send
+from flask import Flask,request, session
+from flask_socketio import SocketIO, emit, join_room
 # from elasticsearch import Elasticsearch
 # from elasticsearch import helpers
 import datetime
 import redis
 import requests
 import json
-from socket_io_emitter import Emitter
 from pydantic import BaseSettings
 
 
@@ -30,11 +29,7 @@ print(ES_IP, " ## ", ES_PORT, " ## ", SPRING_IP, " ## ", SPRING_PORT, " ## ", RE
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "test key"
-# app.config['SESSION_TYPE'] = 'redis'
-# app.config['SESSION_REDIS'] = redis.from_url('redis://redis-svc:6379')
-#
 socketio = SocketIO(app, message_queue=f'{REDIS_IP}:{REDIS_PORT}', cors_allowed_origins="*")
-#io = Emitter({'host': 'redis-svc', 'port': 6379})
 users_in_room = {}
 rooms_sid = {}
 names_sid = {}
@@ -59,14 +54,9 @@ def hello():
     return 'hello'
 
 
-@socketio.on('connect')  ################### test
+@socketio.on('connect')
 def test_connect():
     print("connection is successs")
-
-
-# @app.route("/join", methods=["GET"])
-# def join():
-#     return render_template("join.html")
 
 @socketio.on("create-room")
 def on_create_room(data):
@@ -74,7 +64,6 @@ def on_create_room(data):
         "name": data["userNickname"]
     }
     print(session)
-    #io.In(data["roomName"]).Emit("join-request")
     emit("join-request")
 
     # Spring 로직 추가 => 방 생성
@@ -112,8 +101,7 @@ def on_join_room(data):
     # date = datetime.datetime.now()
     # now = date.strftime('%m/%d/%y %H:%M:%S')
     # doc_join= {"des":"New member joined", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
-    # es.index(index=index_name, doc_type="log", body=doc_join)   
-    #io.In(room_id).Emit("user-connect", {"sid": sid, "name": display_name},include_self=False, room=room_id)
+    # es.index(index=index_name, doc_type="log", body=doc_join)
     emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
     # broadcasting시 동일한 네임스페이스에 연결된 모든 클라이언트에게 메시지를 송신함
     # include_self=False 이므로 본인을 제외하고 broadcasting
@@ -128,15 +116,11 @@ def on_join_room(data):
         # send list of existing users to the new member
         print("usrlist :::::::::::::::::::::::")
         print(usrlist)
-        #io.In(room_id).Emit("user-list", {"list": usrlist, "my_id": sid})
         emit("user-list", {"list": usrlist, "my_id": sid})
         # add new member to user list maintained on server
         users_in_room[room_id].append(sid)
 
     print("\n users: ", users_in_room, "\n")
-
-
-# leave_room은 사용하지 않아도 되는지?
 
 @socketio.on("disconnect")
 def on_disconnect():
@@ -152,8 +136,7 @@ def on_disconnect():
 
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
 
-    emit("user-disconnect", {"sid": sid},
-         broadcast=True, include_self=False, room=room_id)
+    emit("user-disconnect", {"sid": sid}, broadcast=True, include_self=False, room=room_id)
     # Spring 로직 추가
     response = exit_room(sid)
     print(response)
@@ -240,7 +223,5 @@ if __name__ == '__main__':
     socketio.run(app,
                  host="0.0.0.0",
                  port=5000
-                 # debug=True,
-                 # ssl_context=("cert.pem", "key.pem")
                  )
     # make_index(es, index_name)
