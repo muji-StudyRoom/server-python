@@ -195,6 +195,7 @@ def send_message(message):
 
     # broadcast to others in the room
     emit("chatting", message, broadcast=True, include_self=True, room=room_id)
+    print("emit chatting event")
 
 
 def getParam(data, socketID):
