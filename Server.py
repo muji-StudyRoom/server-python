@@ -190,9 +190,14 @@ def send_message(message):
     # now = date.strftime('%m/%d/%y %H:%M:%S')
     # doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_chatting)
-
+    data = json.dumps({
+        "text": text,
+        "room_id":room_id,
+        "sender": sender,
+        "type": "normal"
+    })
     # broadcast to others in the room
-    emit("chatting", message, broadcast=True, include_self=True, room=room_id)
+    emit("chatting", data, broadcast=True, include_self=True, room=room_id)
     print("emit chatting event")
 
 
