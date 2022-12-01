@@ -198,15 +198,23 @@ def send_message(message):
     # now = date.strftime('%m/%d/%y %H:%M:%S')
     # doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_chatting)
+    
     data = {
         "text": text,
         "room_id": room_id,
         "sender": sender,
         "type": "normal"
     }
+    
+    # front로부터 받은 data에 direct라는 필드가 있고 false 값이라면 브로드캐스팅을 하고
+    # true라면 특정인에게만 채팅(emit)을 보냄
+    if "direct" in message:
+        if message["direct"] == False:
+            emit("chatting", data, broadcast=True, include_self=True, room=room_id)
+        else:
+            emit("chatting", data, to=message["dest"])
     # broadcast to others in the room
-    emit("chatting", data, broadcast=True, include_self=True, room=room_id)
-    print("emit chatting event")
+    # emit("chatting", data, room=room_id)
 
 
 def getParam(data, socketID):
