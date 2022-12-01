@@ -7,7 +7,7 @@ import redis
 import requests
 import json
 from pydantic import BaseSettings
-
+from flask_session import Session
 
 class Settings(BaseSettings):
     ES_IP: str = 'http://localhost'
@@ -30,10 +30,12 @@ print(ES_IP, " ## ", ES_PORT, " ## ", SPRING_IP, " ## ", SPRING_PORT, " ## ", RE
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "test key"
 socketio = SocketIO(app, message_queue=f'{REDIS_IP}:{REDIS_PORT}', cors_allowed_origins="*")
+
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_REDIS'] = redis.from_url('redis://localhost:6379')
+app.config['SESSION_REDIS'] = redis.from_url('redis://redis-svc:6379')
+
 users_in_room = {}
 rooms_sid = {}
 names_sid = {}
