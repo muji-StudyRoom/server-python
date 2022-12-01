@@ -106,7 +106,8 @@ def on_join_room(data):
     emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
 
     message = {
-        "text": f'{display_name}님이 접속하셨습니다.',
+        "sid": sid,
+        "name": display_name,
         'type': "join"
     }
     emit("chatting", message, broadcast=True, include_self=True, room=room_id)
@@ -144,8 +145,9 @@ def on_disconnect():
 
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
     message = {
-        "text": f'{display_name} 님이 나갔습니다.',
-        'type': "disconnect"
+        "sid": sid,
+        "name": display_name,
+        'type': "join"
     }
     emit("chatting", message, broadcast=True, include_self=True, room=room_id)
 
