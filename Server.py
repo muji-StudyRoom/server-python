@@ -30,6 +30,10 @@ print(ES_IP, " ## ", ES_PORT, " ## ", SPRING_IP, " ## ", SPRING_PORT, " ## ", RE
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "test key"
 socketio = SocketIO(app, message_queue=f'{REDIS_IP}:{REDIS_PORT}', cors_allowed_origins="*")
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_REDIS'] = redis.from_url('redis://localhost:6379')
 users_in_room = {}
 rooms_sid = {}
 names_sid = {}
@@ -68,8 +72,7 @@ def on_create_room(data):
     emit("join-request")
 
     # Spring 로직 추가 => 방 생성
-    response = create_room_request(data, request.sid)
-    print(response)
+    create_room_request(data, request.sid)
 
 
 # elk
@@ -90,8 +93,7 @@ def on_join_room(data):
     join_room(room_id)
 
     # Spring 로직 추가 => 유저 데이터 추가
-    response = enter_user_request(data, sid)
-    print(response)
+    enter_user_request(data, sid)
 
     rooms_sid[sid] = room_id
     names_sid[sid] = display_name
