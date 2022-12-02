@@ -83,7 +83,7 @@ def on_create_room(data):
     emit("join-request")
     
     # elk
-    room_id = data["room_id"]
+    room_id = data["roomName"]
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
     doc_create = {"des": "create room", "room_id": room_id, "@timestamp": utc_time()}
