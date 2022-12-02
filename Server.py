@@ -153,7 +153,7 @@ def on_disconnect():
     message = {
         "sid": sid,
         "name": display_name,
-        'type': "join"
+        'type': "disconnect"
     }
     emit("chatting", message, broadcast=True, include_self=True, room=room_id)
 
