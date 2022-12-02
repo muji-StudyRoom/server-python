@@ -203,7 +203,9 @@ def send_message(message):
         "text": text,
         "room_id": room_id,
         "sender": sender,
-        "type": "normal"
+        "type": "normal",
+        "direct": False, # react에서 dm인지 아닌지 확인할 수 있는 필드
+        "target" : "self"
     }
     
     # front로부터 받은 data에 direct라는 필드가 있고 false 값이라면 브로드캐스팅을 하고
@@ -212,8 +214,11 @@ def send_message(message):
         if message["direct"] == False:
             emit("chatting", data, broadcast=True, include_self=True, room=room_id)
         else:
-            emit("chatting", data, to=message["dest"])
+            data["direct"] = True
             emit("chatting", data, to=request.sid)
+            data["target"] = "other"
+            emit("chatting", data, to=message["dest"])
+
     # broadcast to others in the room
     # emit("chatting", data, room=room_id)
 
