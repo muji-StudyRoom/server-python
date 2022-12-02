@@ -226,7 +226,7 @@ def send_message(message):
     # doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_chatting)
     
-    user_nickname = message["userNickname"]
+    user_nickname = message["sender"]
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
     doc_chatting = {"des": "chatting", "room_id": room_id, "user_nickname" :user_nickname, "chatting message": text, "@timestamp": utc_time()}
