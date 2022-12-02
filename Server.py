@@ -75,18 +75,19 @@ def on_create_room(data):
         "name": data["userNickname"]
     }
     print(session)
-    # Spring 로직 추가 => 방 생성
-    create_room_request(data, request.sid)
-    print("방 생성됨!!!!!!!!!!!!!!!!!")
-
-    emit("join-request")
-
+    
     # elk
     room_id = data["room_id"]
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
     doc_create = {"des": "create room", "room_id": room_id, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_create)
+    
+    # Spring 로직 추가 => 방 생성
+    create_room_request(data, request.sid)
+    print("방 생성됨!!!!!!!!!!!!!!!!!")
+
+    emit("join-request")
 
 
 @socketio.on("join-room")
