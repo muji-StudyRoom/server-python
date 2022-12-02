@@ -9,10 +9,11 @@ import json
 from pydantic import BaseSettings
 from flask_session import Session
 
+
 class Settings(BaseSettings):
     ES_IP: str = 'http://localhost'
     ES_PORT: int = 9200
-    SPRING_IP: str = 'http://localhost'
+    SPRING_IP: str = 'localhost'
     SPRING_PORT: int = 8080
     REDIS_IP: str = 'redis://localhost'
     REDIS_PORT: int = 6379
@@ -36,8 +37,6 @@ app.config['SESSION_REDIS'] = redis.from_url(f'{REDIS_IP}:{REDIS_PORT}')
 server_session = Session(app)
 socketio = SocketIO(app, message_queue=f'{REDIS_IP}:{REDIS_PORT}', cors_allowed_origins="*")
 
-
-
 users_in_room = {}
 rooms_sid = {}
 names_sid = {}
@@ -47,7 +46,7 @@ names_sid = {}
 # es = Elasticsearch(f'{ES_IP}:{ES_PORT}') ## 변경
 # es.info()
 
-# def utc_time():  
+# def utc_time():
 #     return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
 # def make_index(es, index_name):
@@ -73,10 +72,11 @@ def on_create_room(data):
         "name": data["userNickname"]
     }
     print(session)
-    emit("join-request")
-
     # Spring 로직 추가 => 방 생성
     create_room_request(data, request.sid)
+    print("방 생성됨!!!!!!!!!!!!!!!!!")
+
+    emit("join-request")
 
 
 # elk
@@ -97,8 +97,14 @@ def on_join_room(data):
     join_room(room_id)
 
     # Spring 로직 추가 => 유저 데이터 추가
-    enter_user_request(data, sid)
+    response = enter_user_request(data, sid)
+    print("###########################")
+    print(response)
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    print(response.json())
 
+    users_in_room = response.json()
+    print(type(users_in_room))
     rooms_sid[sid] = room_id
     names_sid[sid] = display_name
     # broadcast to others in the room
@@ -116,25 +122,41 @@ def on_join_room(data):
         "name": display_name,
         'type': "join"
     }
+    print(message)
     emit("chatting", message, broadcast=True, include_self=True, room=room_id)
     # broadcasting시 동일한 네임스페이스에 연결된 모든 클라이언트에게 메시지를 송신함
     # include_self=False 이므로 본인을 제외하고 broadcasting
     # room=room_id인 room에 메시지를 송신합니다. broadcast의 값이 True이어야 합니다.
     # add to user list maintained on server
-    if room_id not in users_in_room:
-        users_in_room[room_id] = [sid]
-        emit("user-list", {"my_id": sid})  # send own id only
+    # if room_id not in users_in_room:
+    #     users_in_room[room_id] = [sid]
+    #     emit("user-list", {"my_id": sid})  # send own id only
+    # else:
+    #     usrlist = {u_id: names_sid[u_id]
+    #                for u_id in users_in_room[room_id]}
+    #     # { socketId : userName ... } 형태의 json
+    #     # send list of existing users to the new member
+    #     print("usrlist :::::::::::::::::::::::")
+    #     print(usrlist)
+    #     emit("user-list", {"list": usrlist, "my_id": sid})
+    #     # add new member to user list maintained on server
+    #     users_in_room[room_id].append(sid)
+    #
+    print(len(users_in_room))
+    if len(users_in_room) == 1:
+        print("이거 실행됨")
+        emit("user-list", {"my_id": sid})
     else:
-        usrlist = {u_id: names_sid[u_id]
-                   for u_id in users_in_room[room_id]}
-        # send list of existing users to the new member
-        print("usrlist :::::::::::::::::::::::")
-        print(usrlist)
+        print(users_in_room)
+        usrlist = users_in_room
+        for key in users_in_room:
+            print(key)
+            print(users_in_room[key])
+            if users_in_room[key] is display_name:
+                 del(usrlist[sid])
         emit("user-list", {"list": usrlist, "my_id": sid})
-        # add new member to user list maintained on server
-        users_in_room[room_id].append(sid)
 
-    print("\n users: ", users_in_room, "\n")
+    # print("\n users: ", users_in_room, "\n")
 
 
 @socketio.on("disconnect")
@@ -158,7 +180,6 @@ def on_disconnect():
     emit("chatting", message, broadcast=True, include_self=True, room=room_id)
 
     emit("user-disconnect", {"sid": sid}, broadcast=True, include_self=False, room=room_id)
-
 
     # Spring 로직 추가
     response = exit_room(sid)
@@ -198,14 +219,14 @@ def send_message(message):
     # now = date.strftime('%m/%d/%y %H:%M:%S')
     # doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_chatting)
-    
+
     data = {
         "text": text,
         "room_id": room_id,
         "sender": sender,
         "type": "normal"
     }
-    
+
     # front로부터 받은 data에 direct라는 필드가 있고 false 값이라면 브로드캐스팅을 하고
     # true라면 특정인에게만 채팅(emit)을 보냄
     if "direct" in message:
