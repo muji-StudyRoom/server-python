@@ -1,7 +1,7 @@
 from flask import Flask, request, session
 from flask_socketio import SocketIO, emit, join_room
-# from elasticsearch import Elasticsearch
-# from elasticsearch import helpers
+from elasticsearch import Elasticsearch
+from elasticsearch import helpers
 import datetime
 import redis
 import requests
@@ -44,18 +44,18 @@ names_sid = {}
 
 
 ### elk, kibana
-# es = Elasticsearch(f'{ES_IP}:{ES_PORT}') ## 변경
-# es.info()
+es = Elasticsearch(f'{ES_IP}:{ES_PORT}') ## 변경
+es.info()
 
-# def utc_time():  
-#     return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+def utc_time():  
+    return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
-# def make_index(es, index_name):
-#     if es.indices.exists(index=index_name):
-#         es.indices.delete(index=index_name)
-#         es.indices.create(index=index_name)
+def make_index(es, index_name):
+    if es.indices.exists(index=index_name):
+        es.indices.delete(index=index_name)
+        es.indices.create(index=index_name)
 
-# index_name= 'webrtc_room'
+index_name= 'webrtc_room'
 
 @app.route('/')
 def hello():
@@ -79,12 +79,12 @@ def on_create_room(data):
     create_room_request(data, request.sid)
 
 
-# elk
-# room_id = data["room_id"]
-# date = datetime.datetime.now()
-# now = date.strftime('%m/%d/%y %H:%M:%S')
-# doc_create= {"des":"create room", "room_id":room_id, "@timestamp": utc_time()}
-# es.index(index=index_name, doc_type="log", body=doc_create)
+    # elk
+    room_id = data["room_id"]
+    date = datetime.datetime.now()
+    now = date.strftime('%m/%d/%y %H:%M:%S')
+    doc_create= {"des":"create room", "room_id":room_id, "@timestamp": utc_time()}
+    es.index(index=index_name, doc_type="log", body=doc_create)
 
 
 @socketio.on("join-room")
@@ -105,10 +105,10 @@ def on_join_room(data):
     print("[{}] New member joined: {}<{}>".format(room_id, display_name, sid))
 
     ### elk
-    # date = datetime.datetime.now()
-    # now = date.strftime('%m/%d/%y %H:%M:%S')
-    # doc_join= {"des":"New member joined", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
-    # es.index(index=index_name, doc_type="log", body=doc_join)
+    date = datetime.datetime.now()
+    now = date.strftime('%m/%d/%y %H:%M:%S')
+    doc_join= {"des":"New member joined", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
+    es.index(index=index_name, doc_type="log", body=doc_join)
     emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
 
     message = {
@@ -144,10 +144,10 @@ def on_disconnect():
     display_name = names_sid[sid]
 
     ### elk
-    # now = datetime.datetime.now()
-    # now = now.strftime('%m/%d/%y %H:%M:%S')
-    # doc_disconnect= {"des":"user-disconnect", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
-    # es.index(index=index_name, doc_type="log", body=doc_disconnect)
+    now = datetime.datetime.now()
+    now = now.strftime('%m/%d/%y %H:%M:%S')
+    doc_disconnect= {"des":"user-disconnect", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
+    es.index(index=index_name, doc_type="log", body=doc_disconnect)
 
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
     message = {
@@ -194,10 +194,10 @@ def send_message(message):
     room_id = message["room_id"]
 
     ### elk
-    # date = datetime.datetime.now()
-    # now = date.strftime('%m/%d/%y %H:%M:%S')
-    # doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
-    # es.index(index=index_name, doc_type="log", body=doc_chatting)
+    date = datetime.datetime.now()
+    now = date.strftime('%m/%d/%y %H:%M:%S')
+    doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
+    es.index(index=index_name, doc_type="log", body=doc_chatting)
     
     data = {
         "text": text,
@@ -266,4 +266,4 @@ if __name__ == '__main__':
                  host="0.0.0.0",
                  port=5000
                  )
-    # make_index(es, index_name)
+    make_index(es, index_name)
