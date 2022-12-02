@@ -213,6 +213,7 @@ def send_message(message):
             emit("chatting", data, broadcast=True, include_self=True, room=room_id)
         else:
             emit("chatting", data, to=message["dest"])
+            emit("chatting", data, to=request.sid)
     # broadcast to others in the room
     # emit("chatting", data, room=room_id)
 
