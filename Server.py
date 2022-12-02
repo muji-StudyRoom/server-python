@@ -44,7 +44,7 @@ names_sid = {}
 
 
 ### elk, kibana
-es = Elasticsearch(f'{ES_IP}:{ES_PORT}') ## 변경
+es = Elasticsearch('{ES_IP}:{ES_PORT}') ## 변경
 es.info()
 
 def utc_time():  
