@@ -41,21 +41,23 @@ users_in_room = {}
 rooms_sid = {}
 names_sid = {}
 
-
 ### elk, kibana
-es = Elasticsearch(f'{ES_IP}:{ES_PORT}') ## 변경
+es = Elasticsearch(f'{ES_IP}:{ES_PORT}')  ## 변경
 es.info()
 
 
-def utc_time():  
+def utc_time():
     return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
 
 def make_index(es, index_name):
     if es.indices.exists(index=index_name):
         es.indices.delete(index=index_name)
         es.indices.create(index=index_name)
 
-index_name= 'webrtc_room'
+
+index_name = 'webrtc_room'
+
 
 @app.route('/')
 def hello():
@@ -79,12 +81,11 @@ def on_create_room(data):
 
     emit("join-request")
 
-
     # elk
     room_id = data["room_id"]
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
-    doc_create= {"des":"create room", "room_id":room_id, "@timestamp": utc_time()}
+    doc_create = {"des": "create room", "room_id": room_id, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_create)
 
 
@@ -114,7 +115,7 @@ def on_join_room(data):
     ### elk
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
-    doc_join= {"des":"New member joined", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
+    doc_join = {"des": "New member joined", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_join)
     emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
 
@@ -154,7 +155,7 @@ def on_join_room(data):
             print(key)
             print(users_in_room[key])
             if users_in_room[key] is display_name:
-                 del(usrlist[sid])
+                del users_in_room[key]
         emit("user-list", {"list": usrlist, "my_id": sid})
 
     # print("\n users: ", users_in_room, "\n")
@@ -169,7 +170,7 @@ def on_disconnect():
     ### elk
     now = datetime.datetime.now()
     now = now.strftime('%m/%d/%y %H:%M:%S')
-    doc_disconnect= {"des":"user-disconnect", "room_id":room_id, "sid": sid, "@timestamp": utc_time()}
+    doc_disconnect = {"des": "user-disconnect", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_disconnect)
 
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
@@ -222,20 +223,18 @@ def send_message(message):
     # doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_chatting)
 
-
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
-    doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
+    doc_chatting = {"des": "chatting", "room_id": room_id, "chatting message": text, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_chatting)
-    
 
     data = {
         "text": text,
         "room_id": room_id,
         "sender": sender,
         "type": "normal",
-        "direct": False, # react에서 dm인지 아닌지 확인할 수 있는 필드
-        "target" : "self"
+        "direct": False,  # react에서 dm인지 아닌지 확인할 수 있는 필드
+        "target": "self"
     }
 
     # front로부터 받은 data에 direct라는 필드가 있고 false 값이라면 브로드캐스팅을 하고
