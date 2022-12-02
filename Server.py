@@ -169,10 +169,11 @@ def on_disconnect():
     room_id = rooms_sid[sid]
     display_name = names_sid[sid]
 
-    ### elk
+    ### elasticsearch
+    user_nickname = data["userNickname"]
     now = datetime.datetime.now()
     now = now.strftime('%m/%d/%y %H:%M:%S')
-    doc_disconnect = {"des": "user-disconnect", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
+    doc_disconnect = {"des": "user-disconnect", "room_id": room_id, "sid": sid, "user_nickname" :user_nickname, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_disconnect)
 
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
@@ -218,16 +219,17 @@ def send_message(message):
     text = message["text"]
     room_id = message["room_id"]
 
-    ### elk
+    ### elasticsearch
 
     # date = datetime.datetime.now()
     # now = date.strftime('%m/%d/%y %H:%M:%S')
     # doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_chatting)
-
+    
+    user_nickname = message["userNickname"]
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
-    doc_chatting = {"des": "chatting", "room_id": room_id, "chatting message": text, "@timestamp": utc_time()}
+    doc_chatting = {"des": "chatting", "room_id": room_id, "user_nickname" :user_nickname, "chatting message": text, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_chatting)
 
     data = {
