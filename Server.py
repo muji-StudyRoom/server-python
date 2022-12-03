@@ -77,13 +77,12 @@ def on_create_room(data):
     print(session)
     
     # Spring 로직 추가 => 방 생성
-    response = create_room_request(data, request.sid)
+    create_room_request(data, request.sid)
     print("방 생성됨!!!!!!!!!!!!!!!!!")
 
     emit("join-request")
     
     # elasticsearch
-    users_in_room = response.json()
     user_nickname = data["userNickname"]
     
     if len(users_in_room) == 0:
@@ -174,7 +173,7 @@ def on_disconnect():
     user_nickname = data["userNickname"]
     now = datetime.datetime.now()
     now = now.strftime('%m/%d/%y %H:%M:%S')
-    doc_disconnect = {"des": "user-disconnect", "room_id": room_id,  "user_nickname" :user_nicknamem ,"sid": sid, "@timestamp": utc_time()}
+    doc_disconnect = {"des": "user-disconnect", "room_id": room_id,  "user_nickname" :user_nickname ,"sid": sid, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_disconnect)
 
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
