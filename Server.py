@@ -84,10 +84,11 @@ def on_create_room(data):
     
     # elasticsearch
     users_in_room = response.json()
-
+    user_nickname = data["userNickname"]
+    
     if len(users_in_room) == 1:
         room_id = data["roomName"]
-        doc_create = {"des": "create room", "room_id": room_id, "@timestamp": utc_time()}
+        doc_create = {"des": "create room", "room_id": room_id,  "user_nickname" : user_nickname, "@timestamp": utc_time()}
         es.index(index=index_name, doc_type="log", body=doc_create)
 
 
@@ -115,8 +116,9 @@ def on_join_room(data):
     print("[{}] New member joined: {}<{}>".format(room_id, display_name, sid))
 
     ### elasticsearch
+    user_nickname = data["userNickname"]
     if len(users_in_room) > 1:
-        doc_join = {"des": "New member joined", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
+        doc_join = {"des": "New member joined", "room_id": room_id,  "user_nickname" : user_nickname, "sid": sid, "@timestamp": utc_time()}
         es.index(index=index_name, doc_type="log", body=doc_join)
         emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
 
@@ -169,9 +171,10 @@ def on_disconnect():
     display_name = names_sid[sid]
 
     ### elk
+    user_nickname = data["userNickname"]
     now = datetime.datetime.now()
     now = now.strftime('%m/%d/%y %H:%M:%S')
-    doc_disconnect = {"des": "user-disconnect", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
+    doc_disconnect = {"des": "user-disconnect", "room_id": room_id,  "user_nickname" :user_nicknamem ,"sid": sid, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_disconnect)
 
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
@@ -223,10 +226,10 @@ def send_message(message):
     # now = date.strftime('%m/%d/%y %H:%M:%S')
     # doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_chatting)
-
+    user_nickname = message["sender"]
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
-    doc_chatting = {"des": "chatting", "room_id": room_id, "chatting message": text, "@timestamp": utc_time()}
+    doc_chatting = {"des": "chatting", "room_id": room_id, "user_nickname" :user_nickname, "chatting message": text, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_chatting)
 
     data = {
