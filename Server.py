@@ -116,10 +116,11 @@ def on_join_room(data):
     print("[{}] New member joined: {}<{}>".format(room_id, display_name, sid))
 
     ### elasticsearch
-    user_nickname = data["userNickname"]
-    doc_join = {"des": "New member joined", "room_id": room_id,  "user_nickname" : user_nickname, "sid": sid, "@timestamp": utc_time()}
-    es.index(index=index_name, doc_type="log", body=doc_join)
-    emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
+    if len(users_in_room) > 0:
+        user_nickname = data["userNickname"]
+        doc_join = {"des": "New member joined", "room_id": room_id,  "user_nickname" : user_nickname, "sid": sid, "@timestamp": utc_time()}
+        es.index(index=index_name, doc_type="log", body=doc_join)
+        emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
 
     message = {
         "sid": sid,
