@@ -157,7 +157,7 @@ def on_join_room(data):
             print(key)
             print(users_in_room[key])
             if users_in_room[key] is display_name:
-                del users_in_room[key]
+                del usrlist[key]
         emit("user-list", {"list": usrlist, "my_id": sid})
 
     # print("\n users: ", users_in_room, "\n")
