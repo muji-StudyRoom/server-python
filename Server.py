@@ -171,10 +171,10 @@ def on_disconnect():
     display_name = names_sid[sid]
 
     ### elk
-    user_nickname = display_name
+    # user_nickname = display_name
     now = datetime.datetime.now()
     now = now.strftime('%m/%d/%y %H:%M:%S')
-    doc_disconnect = {"des": "user-disconnect", "room_id": room_id,  "user_nickname" :user_nickname ,"sid": sid, "@timestamp": utc_time()}
+    doc_disconnect = {"des": "user-disconnect", "room_id": room_id, "sid": sid, "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_disconnect)
 
     print("[{}] Member left: {}<{}>".format(room_id, display_name, sid))
