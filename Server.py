@@ -170,7 +170,7 @@ def on_disconnect():
     display_name = names_sid[sid]
 
     ### elasticsearch
-    user_nickname = data["userNickname"]
+    user_nickname = display_name
     now = datetime.datetime.now()
     now = now.strftime('%m/%d/%y %H:%M:%S')
     doc_disconnect = {"des": "user-disconnect", "room_id": room_id, "sid": sid, "user_nickname" :user_nickname, "@timestamp": utc_time()}
