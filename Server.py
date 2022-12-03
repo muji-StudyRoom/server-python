@@ -84,7 +84,7 @@ def on_create_room(data):
     
     # elasticsearch
     room_info = response.json()
-    user_nickname = data["userNickname"]
+    user_nickname = str(data["userNickname"])
     
     if room_info["roomEnterUser"] == 0:
         room_id = data["roomName"]
@@ -117,7 +117,7 @@ def on_join_room(data):
 
     ### elasticsearch
     if len(users_in_room) > 0:
-        user_nickname = data["userNickname"]
+        user_nickname = str(data["userNickname"])
         doc_join = {"des": "New member joined", "room_id": room_id,  "user_nickname" : user_nickname, "sid": sid, "@timestamp": utc_time()}
         es.index(index=index_name, doc_type="log", body=doc_join)
         emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
@@ -226,7 +226,7 @@ def send_message(message):
     # now = date.strftime('%m/%d/%y %H:%M:%S')
     # doc_chatting= {"des" : "chatting", "room_id" : room_id, "chatting message" : text,"@timestamp": utc_time()}
     # es.index(index=index_name, doc_type="log", body=doc_chatting)
-    user_nickname = message["sender"]
+    user_nickname = str(message["sender"])
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
     doc_chatting = {"des": "chatting", "room_id": room_id, "user_nickname" :user_nickname, "chatting message": text, "@timestamp": utc_time()}
