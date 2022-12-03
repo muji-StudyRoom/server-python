@@ -83,10 +83,10 @@ def on_create_room(data):
     emit("join-request")
     
     # elasticsearch
-    users_in_room = response.json()
+    room_info = response.json()
     user_nickname = data["userNickname"]
     
-    if users_in_room["roomEnterUser"] == 0:
+    if room_info["roomEnterUser"] == 0:
         room_id = data["roomName"]
         doc_create = {"des": "create room", "room_id": room_id,  "user_nickname" : user_nickname, "@timestamp": utc_time()}
         es.index(index=index_name, doc_type="log", body=doc_create)
