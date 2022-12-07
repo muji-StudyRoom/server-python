@@ -1,10 +1,12 @@
-## Signaling + Chatting Server 
-<img src="https://img.shields.io/badge/python-3776AB?style=flat-square&logo=python&logoColor=white"> <img src="https://img.shields.io/badge/flask-000000?style=flat-square&logo=flask&logoColor=white"> <img src="https://img.shields.io/badge/Redis-F80000?style=flat-square&logo=Redis&logoColor=white"> <img src="https://img.shields.io/badge/Socket.Io-010101?style=flat-square&logo=Socket.IO&logoColor=white"/> <img src="https://img.shields.io/badge/Elasticsearch-7952B3?style=flat-square&logo=Elasticsearch&logoColor=white"/>
-
+## ☀️ Signaling + Chatting Server 
 - 초기 WebRTC 커넥션 하기 위한 정보인 socketId 를 반환
 - 같은방에 있는 유저들끼리  채팅을 하기 위한 socket event 로직 처리
 - 채팅에 대한 메타데이터를 ElasticSearch 에 저장하기위한 로직 처리
-### socket-Event 명세서 
+<br>
+
+<img src="https://img.shields.io/badge/python-3776AB?style=flat-square&logo=python&logoColor=white"> <img src="https://img.shields.io/badge/flask-000000?style=flat-square&logo=flask&logoColor=white"> <img src="https://img.shields.io/badge/Redis-F80000?style=flat-square&logo=Redis&logoColor=white"> <img src="https://img.shields.io/badge/Socket.Io-010101?style=flat-square&logo=Socket.IO&logoColor=white"/> <img src="https://img.shields.io/badge/Elasticsearch-7952B3?style=flat-square&logo=Elasticsearch&logoColor=white"/>
+
+### ☀️ Socket-Event 명세서 
 |event|이름|설명|
 |:---:|:---:|:---:|
 |create-room|유저 방 생성|유저가 방을 생성하면 client로 부터 이벤트를 수신, 방 정보를Spring API 서버로 전송, 방 생성 메타데이터 elasticsearch 로 저장 |
