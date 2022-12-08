@@ -268,6 +268,20 @@ def send_message(message):
     # emit("chatting", data, room=room_id)
 
 
+@socketio.on("share-start")
+def share_start(data):
+    sid = request.sid
+    room_id = data["roomName"]
+    emit("share-start", {"sid": sid}, broadcast=True, include_self=False, room=room_id)
+
+
+@socketio.on("share-end")
+def share_end(data):
+    room_id = data["roomName"]
+    sid = request.sid
+    emit("share-end", {"sid": sid}, broadcast=True, include_self=False, room=room_id)
+
+
 def getParam(data, socketID):
     params = json.dumps({
         'userNickname': data['userNickname'],
