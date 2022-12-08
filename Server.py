@@ -8,6 +8,10 @@ import requests
 import json
 from pydantic import BaseSettings
 from flask_session import Session
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+import hashlib
+import base64
 
 
 class Settings(BaseSettings):
@@ -30,13 +34,13 @@ print(ES_IP, " ## ", ES_PORT, " ## ", SPRING_IP, " ## ", SPRING_PORT, " ## ", RE
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "test key"
-app.config['SESSION_TYPE'] = 'redis'
-app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_REDIS'] = redis.from_url(f'{REDIS_IP}:{REDIS_PORT}')
-server_session = Session(app)
+# app.config['SESSION_TYPE'] = 'redis'
+# app.config['SESSION_PERMANENT'] = False
+# app.config['SESSION_USE_SIGNER'] = True
+# app.config['SESSION_REDIS'] = redis.from_url(f'{REDIS_IP}:{REDIS_PORT}')
+# server_session = Session(app)
 socketio = SocketIO(app, message_queue=f'{REDIS_IP}:{REDIS_PORT}', cors_allowed_origins="*")
-
+key = hashlib.pbkdf2_hmac(hash_name='sha256', password=b'pass123#', salt=b'eyestalk', iterations=100)
 users_in_room = {}
 rooms_sid = {}
 names_sid = {}
@@ -75,20 +79,21 @@ def on_create_room(data):
         "name": data["userNickname"]
     }
     print(session)
-    
+
     # Spring 로직 추가 => 방 생성
     response = create_room_request(data, request.sid)
     print("방 생성됨!!!!!!!!!!!!!!!!!")
 
     emit("join-request")
-    
+
     # elasticsearch
     room_info = response.json()
     user_nickname = str(data["userNickname"])
-    
+
     if room_info["roomEnterUser"] == 0:
         room_id = data["roomName"]
-        doc_create = {"des": "create room", "room_id": room_id,  "user_nickname" : user_nickname, "@timestamp": utc_time()}
+        doc_create = {"des": "create room", "room_id": room_id, "user_nickname": user_nickname,
+                      "@timestamp": utc_time()}
         es.index(index=index_name, doc_type="log", body=doc_create)
 
 
@@ -118,7 +123,8 @@ def on_join_room(data):
     ### elasticsearch
     if len(users_in_room) > 0:
         user_nickname = str(data["userNickname"])
-        doc_join = {"des": "New member joined", "room_id": room_id,  "user_nickname" : user_nickname, "sid": sid, "@timestamp": utc_time()}
+        doc_join = {"des": "New member joined", "room_id": room_id, "user_nickname": user_nickname, "sid": sid,
+                    "@timestamp": utc_time()}
         es.index(index=index_name, doc_type="log", body=doc_join)
         emit("user-connect", {"sid": sid, "name": display_name}, broadcast=True, include_self=False, room=room_id)
 
@@ -232,7 +238,10 @@ def send_message(message):
     user_nickname = str(message["sender"])
     date = datetime.datetime.now()
     now = date.strftime('%m/%d/%y %H:%M:%S')
-    doc_chatting = {"des": "chatting", "room_id": room_id, "user_nickname" :user_nickname, "chatting message": text, "@timestamp": utc_time()}
+    # 채팅 암호화 추가
+    doc_chatting = {"des": "chatting", "room_id": room_id, "user_nickname": user_nickname,
+                    "chatting message": encrypt(text),
+                    "@timestamp": utc_time()}
     es.index(index=index_name, doc_type="log", body=doc_chatting)
 
     data = {
@@ -295,6 +304,30 @@ def exit_room(socketID):
                              verify=False
                              )
     return response
+
+
+def encrypt(data):
+    encrypt_data = {}
+
+    aes = AES.new(key, AES.MODE_ECB)
+    block_size = 16
+
+    data = data.encode('utf8')  # bytes인코딩
+    padded_value = pad(data, block_size)  # 블록 사이즈 맞추기(패딩)
+
+    encrypt_data = base64.b64encode(aes.encrypt(padded_value)).decode('utf8')
+
+    return encrypt_data
+
+
+def decrypt(data):
+    aes = AES.new(key, AES.MODE_ECB)
+
+    block_size = 16
+    decrypted_value = aes.decrypt(base64.b64decode(data))  # 복호화
+    unpadded_value = unpad(decrypted_value, block_size)  # 암호화 할 때 붙였던 pad 떼어내기
+
+    return unpadded_value.decode('utf-8')
 
 
 if __name__ == '__main__':
