@@ -14,3 +14,13 @@
 |disconnect|유저 퇴장|유저가 방을 나갈때 SpringAPI 에 유저 정보 삭제 요청, 유저 퇴장 메타데이터를 Elasticsearch 로 저장|
 |data|connection 데이터 송수신|WebRTC connection 을 맺기위한 peer 데이터 송수신|
 |chatting|채팅 송수신|Client로 부터 받은 채팅데이터를 ElasticSearch에 저장 |
+
+
+<br>
+<br>
+
+### 서비스 플로우
+![image](https://user-images.githubusercontent.com/73453283/207784624-e64d6614-03c9-4516-809d-ca5c475f3cce.png)
+![image](https://user-images.githubusercontent.com/73453283/207784664-1e79dd47-681e-41b0-810c-c774dcfdcb2c.png)
+![image](https://user-images.githubusercontent.com/73453283/207784689-38b47e7e-a0bf-4a88-b159-26df45333716.png)
+![image](https://user-images.githubusercontent.com/73453283/207784729-6f3cd64d-f36d-4c79-b0d3-cf64a6b7a125.png)
